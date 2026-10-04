@@ -111,99 +111,141 @@ class ReceiptParser {
   static double _extractAmount(List<String> lines) {
     final totalKeywords = [
       'tiền cần thanh toán', 'tien can thanh toan',
-      'tổng tiền', 'tong tien', 'tổng cộng', 'tong cong',
-      'thanh toán', 'thanh toan', 'tiền mặt', 'tien mat',
-      'cộng tiền hàng', 'cong tien hang', 'phải trả', 'phai tra',
-      'số tiền', 'so tien', 'total', 'grand total', 'amount due',
-      'net amount', 'balance due', 'cash',
+      'tổng thanh toán', 'tong thanh toan',
+      'khách phải trả', 'khach phai tra',
+      'tổng tiền', 'tong tien',
+      'tổng cộng', 'tong cong',
+      'phải thanh toán', 'phai thanh toan',
+      'cộng tiền hàng', 'cong tien hang',
+      'tiền mặt', 'tien mat',
+      'thanh toán', 'thanh toan',
+      'phải trả', 'phai tra',
+      'số tiền', 'so tien',
+      'grand total', 'total', 'amount due', 'balance due', 'cash',
     ];
 
-    // Non-currency units: numbers immediately followed by these are NOT money amounts
     final nonMoneyUnits = RegExp(
-      r'^\s*(?:phút|phut|giờ|gio|ngày|ngay|tháng|thang|năm|nam|g|kg|ml|l|chai|lon|cái|cai|gói|goi|bịch|bich|km|sl|item|pcs|mã|ma)\b',
+      r'^\s*(?:phút|phut|giờ|gio|ngày|ngay|tháng|thang|năm|nam|g|kg|ml|l|chai|lon|cái|cai|gói|goi|bịch|bich|km|sl|item|pcs|ly|dĩa|dia|bát|bat|phần|phan)\b',
       caseSensitive: false,
     );
 
-    double bestAmount = 0.0;
-    double highestScore = -1.0;
-
-    // Matches numbers with thousand separators (e.g. 237,576 | 537,000 | 17,500),
-    // numbers with faint zero (.00 | ,00), or pure 4-9 digit numbers (e.g. 25000)
-    final numberRegex = RegExp(
-      r'(?:^|[^\d.,])(\d{1,3}(?:[.,][0-9OoQD]{3})+(?:[.,][0-9OoQD]{1,2})?|\d{1,3}[.,][0-9OoQD]{2}|\d{4,9})(?:\s*(?:VND|VNĐ|đ|d|\$))?',
-      caseSensitive: false,
-    );
+    // 1. First strategy: find total amount on lines containing total keywords
+    final candidateAmounts = <_AmountCandidate>[];
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
-      final lowerLine = line.toLowerCase();
+      final lower = line.toLowerCase();
 
-      bool hasKeyword = totalKeywords.any((k) => lowerLine.contains(k));
-      double keywordBoost = 0.0;
-      if (lowerLine.contains('tiền cần thanh toán') || lowerLine.contains('tien can thanh toan')) {
-        keywordBoost = 250.0;
-      } else if (lowerLine.contains('tổng tiền') || lowerLine.contains('tong tien') || lowerLine.contains('tổng cộng')) {
-        keywordBoost = 200.0;
-      } else if (hasKeyword) {
-        keywordBoost = 150.0;
+      String? matchedKw;
+      for (var kw in totalKeywords) {
+        if (lower.contains(kw)) {
+          matchedKw = kw;
+          break;
+        }
       }
 
-      // If current line has keyword but no number, peek next line
-      String searchArea = line;
-      final hasNumberOnLine = numberRegex.hasMatch(line);
-      if (hasKeyword && !hasNumberOnLine && i + 1 < lines.length) {
-        searchArea = '$line ${lines[i + 1]}';
-      }
-
-      final matches = numberRegex.allMatches(searchArea);
-      for (var match in matches) {
-        final rawVal = match.group(1);
-        if (rawVal == null) continue;
-
-        // Check if followed by non-money unit (e.g. "60 phút", "110g", "500ml")
-        final endPos = match.end;
-        if (endPos < searchArea.length) {
-          final remainder = searchArea.substring(endPos);
-          if (nonMoneyUnits.hasMatch(remainder)) {
-            continue; // Skip durations, quantities, weights
+      if (matchedKw != null) {
+        // Look on current line first
+        final nums = _findValidNumbers(line, nonMoneyUnits);
+        if (nums.isNotEmpty) {
+          // Filter out discounts (preceded by minus '-')
+          final posNums = <double>[];
+          for (var item in nums) {
+            final startIdx = item.start;
+            final prefix = line.substring(0, startIdx).trimRight();
+            if (!prefix.endsWith('-')) {
+              posNums.add(item.value);
+            }
           }
-        }
 
-        final cleanVal = _cleanNumber(rawVal);
-        if (cleanVal <= 0) continue;
-
-        // Skip years when no total keyword
-        if ((cleanVal >= 2010 && cleanVal <= 2030) && !hasKeyword) {
-          continue;
-        }
-
-        double score = keywordBoost;
-        if (lowerLine.contains('vnd') || lowerLine.contains('vnđ') || lowerLine.contains('đ') || lowerLine.contains('\$')) {
-          score += 30.0;
-        }
-
-        if (score > 0) {
-          // Receipt totals are typically lower down
-          final relativePos = i / lines.length;
-          score += relativePos * 30.0;
-          // In lines with discounts (-34,250 237,576), prefer the actual total
-          score += (cleanVal / 1000000) * 10.0;
-        } else if (i >= lines.length ~/ 2 && cleanVal >= 1000) {
-          // Fallback: bottom half candidates
-          score = (i / lines.length) * 25.0;
-        }
-
-        if (score > highestScore) {
-          highestScore = score;
-          bestAmount = cleanVal;
+          if (posNums.isNotEmpty) {
+            posNums.sort();
+            candidateAmounts.add(_AmountCandidate(
+              amount: posNums.last,
+              score: 300.0 - i,
+            ));
+          } else {
+            nums.sort((a, b) => a.value.compareTo(b.value));
+            candidateAmounts.add(_AmountCandidate(
+              amount: nums.last.value,
+              score: 250.0 - i,
+            ));
+          }
+        } else if (i + 1 < lines.length) {
+          // Amount is on the next line (e.g. "TIEN MAT\n537,000")
+          final nextNums = _findValidNumbers(lines[i + 1], nonMoneyUnits);
+          if (nextNums.isNotEmpty) {
+            nextNums.sort((a, b) => a.value.compareTo(b.value));
+            candidateAmounts.add(_AmountCandidate(
+              amount: nextNums.last.value,
+              score: 280.0 - i,
+            ));
+          }
         }
       }
     }
 
-    return bestAmount;
+    if (candidateAmounts.isNotEmpty) {
+      candidateAmounts.sort((a, b) => b.score.compareTo(a.score));
+      return candidateAmounts.first.amount;
+    }
+
+    // 2. Fallback: if no keyword match was found on any line,
+    // scan bottom half of the receipt for the largest plausible amount
+    final bottomLines = lines.length > 3 ? lines.sublist(lines.length ~/ 3) : lines;
+    double fallbackMax = 0.0;
+    for (var line in bottomLines) {
+      final nums = _findValidNumbers(line, nonMoneyUnits);
+      for (var item in nums) {
+        if (item.value >= 1000 && item.value <= 100000000 && item.value > fallbackMax) {
+          fallbackMax = item.value;
+        }
+      }
+    }
+
+    return fallbackMax;
+  }
+
+  static List<_ExtractedNumber> _findValidNumbers(String line, RegExp nonMoneyUnits) {
+    final results = <_ExtractedNumber>[];
+    // Matches: 237,576 | 537.000 | 537 000 | 17,500 | 537,00 | 537.00 | 50k | 537 | 25000
+    final pattern = RegExp(
+      r'(?:^|[^\w.,])(\d{1,3}(?:[.,\s][0-9OoQD]{3})+(?:[.,][0-9OoQD]{1,2})?|\d{1,3}[.,][0-9OoQD]{2}|\d{1,4}[kK]|\d{3,9})(?:\s*(?:VND|VNĐ|đ|d|\$))?',
+      caseSensitive: false,
+    );
+
+    for (var m in pattern.allMatches(line)) {
+      final raw = m.group(1);
+      if (raw == null) continue;
+
+      final startPos = m.start;
+      final endPos = m.end;
+
+      // Check if followed by non-money unit (e.g. "60 phút", "110g", "500ml")
+      if (endPos < line.length) {
+        final remainder = line.substring(endPos);
+        if (nonMoneyUnits.hasMatch(remainder)) {
+          continue;
+        }
+      }
+
+      final val = _cleanNumber(raw);
+      if (val > 0) {
+        results.add(_ExtractedNumber(value: val, raw: raw, start: startPos));
+      }
+    }
+
+    return results;
   }
 
   static double _cleanNumber(String raw) {
+    // Handle 'k' e.g. 50k -> 50000
+    if (raw.toLowerCase().endsWith('k')) {
+      final n = raw.replaceAll(RegExp(r'[^\d.,]'), '');
+      final d = double.tryParse(n) ?? 0.0;
+      return d * 1000;
+    }
+
     // Replace common OCR character misreads (O, o, Q, D for 0)
     String s = raw.replaceAll(RegExp(r'[OoQD]'), '0');
     s = s.replaceAll(RegExp(r'[^\d.,]'), '').trim();
@@ -233,7 +275,13 @@ class ReceiptParser {
       }
     }
 
-    return double.tryParse(s) ?? 0.0;
+    double val = double.tryParse(s) ?? 0.0;
+    // In VN receipts, an amount between 10 and 999 on a total line is written in thousands (e.g. 537 -> 537,000)
+    if (val >= 10 && val < 1000) {
+      val = val * 1000;
+    }
+
+    return val;
   }
 
   /// Extracts date from lines (DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY, etc.)
@@ -321,3 +369,17 @@ class ReceiptParser {
     return ExpenseCategory.food;
   }
 }
+
+class _AmountCandidate {
+  final double amount;
+  final double score;
+  _AmountCandidate({required this.amount, required this.score});
+}
+
+class _ExtractedNumber {
+  final double value;
+  final String raw;
+  final int start;
+  _ExtractedNumber({required this.value, required this.raw, required this.start});
+}
+
