@@ -40,7 +40,7 @@ app.*.symbols
 app.*.map.json
 
 # APK binaries
-*.apk
+# *.apk
 *.aab
 
 # Android Studio will place build artifacts here
