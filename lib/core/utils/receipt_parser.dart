@@ -57,7 +57,7 @@ class ReceiptParser {
       'Grab', 'Be', 'Xanh SM', 'ShopeeFood',
     ];
 
-    for (var line in lines.take(6)) {
+    for (var line in lines.take(8)) {
       for (var brand in knownBrands) {
         if (line.toLowerCase().contains(brand.toLowerCase())) {
           return brand;
@@ -65,24 +65,42 @@ class ReceiptParser {
       }
     }
 
-    // 2. Blacklist generic receipt titles
+    // 2. Priority for lines with business indicators (e.g. QUÁN ĂN THIỆN TÂN, NHÀ HÀNG, TIỆM, CÀ PHÊ)
+    final businessPrefixes = [
+      'quán ăn', 'quan an', 'quán', 'quan', 'nhà hàng', 'nha hang',
+      'tiệm', 'tiem', 'cà phê', 'ca phe', 'coffee', 'cafe',
+      'trà sữa', 'tra sua', 'bakery', 'food', 'store', 'shop',
+      'cửa hàng', 'cua hang', 'siêu thị', 'sieu thi', 'bếp', 'bep',
+    ];
+
+    for (var line in lines.take(6)) {
+      final lower = line.toLowerCase();
+      for (var prefix in businessPrefixes) {
+        if (lower.contains(prefix) && line.length >= 4 && line.length <= 45) {
+          // Clean out leading symbols or numbers
+          return line.replaceAll(RegExp(r'^[\W\d_]+'), '').trim();
+        }
+      }
+    }
+
+    // 3. Blacklist generic receipt titles & headers
     final blacklist = [
       'hóa đơn', 'hoa don', 'phiếu thanh toán', 'phieu thanh toan',
       'biên lai', 'bien lai', 'phiếu thu', 'phieu thu', 'receipt', 'invoice',
-      'tax invoice', 'vat', 'tel:', 'hotline', 'đt:', 'địa chỉ', 'dia chi',
-      'address', 'welcome', 'xin chào', 'cảm ơn', 'ngay:', 'date:', 'table',
-      'bàn:', 'thu ngân', 'cashier',
+      'tax invoice', 'vat', 'tel:', 'hotline', 'đt:', 'dt:', 'địa chỉ', 'dia chi',
+      'address', 'welcome', 'xin chào', 'cảm ơn', 'cam on', 'ngay:', 'date:', 'table',
+      'bàn:', 'thu ngân', 'cashier', 'reg ', 'mc #', 'banso', 'bàn số',
     ];
 
-    for (var line in lines.take(5)) {
+    for (var line in lines.take(6)) {
       final lower = line.toLowerCase();
       final isBlacklisted = blacklist.any((b) => lower.contains(b));
-      // Must have some letters and not be too short or pure number
       final hasLetters = RegExp(r'[a-zA-ZÀ-ỹ]').hasMatch(line);
       final isNotTooLong = line.length <= 40;
 
-      if (!isBlacklisted && hasLetters && line.length >= 3 && isNotTooLong) {
-        return line;
+      // Filter out strange short gibberish tokens (e.g. "day VKUX" if first line is noise)
+      if (!isBlacklisted && hasLetters && line.length >= 4 && isNotTooLong) {
+        return line.trim();
       }
     }
 
@@ -102,9 +120,9 @@ class ReceiptParser {
     double bestAmount = 0.0;
     double highestScore = -1.0;
 
-    // Regex to match numbers with separators like 150,000 | 150.000 | 150 000 | 15.50
+    // Matches numbers like 537,000 | 537.000 | 537 000 | 537,00 | 537.00 | 537,OOO | 537
     final numberRegex = RegExp(
-      r'(?:^|[^\d])(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{1,2})?|\d{4,9})(?:\s*(?:VND|VNĐ|đ|d|\$))?',
+      r'(?:^|[^\d])(\d{1,3}(?:[.,\s][0-9OoQD]{2,3})*(?:[.,][0-9OoQD]{1,3})?|\d{2,9})(?:\s*(?:VND|VNĐ|đ|d|\$))?',
       caseSensitive: false,
     );
 
@@ -112,10 +130,9 @@ class ReceiptParser {
       final line = lines[i];
       final lowerLine = line.toLowerCase();
 
-      // Check if this line has a total keyword
       bool hasKeyword = totalKeywords.any((k) => lowerLine.contains(k));
 
-      // Scan current line and the immediate next line (in case value is on next line)
+      // Scan current line and the immediate next line (in case amount is on next line)
       String searchArea = line;
       if (hasKeyword && i + 1 < lines.length) {
         searchArea = '$line ${lines[i + 1]}';
@@ -129,21 +146,21 @@ class ReceiptParser {
         final cleanVal = _cleanNumber(rawVal);
         if (cleanVal <= 0) continue;
 
-        // Skip obvious non-amounts like years (2024, 2025, 2026), phone numbers, postal codes
-        if ((cleanVal >= 2020 && cleanVal <= 2030) && !hasKeyword) {
+        // Skip non-amounts like years (2010..2030), phone numbers, table numbers when no total keyword
+        if ((cleanVal >= 2010 && cleanVal <= 2030) && !hasKeyword) {
           continue;
         }
 
         double score = 0.0;
         if (hasKeyword) {
-          score += 100.0;
+          score += 150.0;
         }
         if (lowerLine.contains('vnd') || lowerLine.contains('vnđ') || lowerLine.contains('đ') || lowerLine.contains('\$')) {
           score += 30.0;
         }
         // Receipt totals are typically towards the lower half
         final relativePos = i / lines.length;
-        score += relativePos * 25.0;
+        score += relativePos * 30.0;
 
         if (score > highestScore) {
           highestScore = score;
@@ -169,11 +186,12 @@ class ReceiptParser {
   }
 
   static double _cleanNumber(String raw) {
-    // Remove all non-digit and non-punctuation characters
-    String s = raw.replaceAll(RegExp(r'[^\d.,]'), '').trim();
+    // Replace common OCR character misreads (O, o, Q, D for 0)
+    String s = raw.replaceAll(RegExp(r'[OoQD]'), '0');
+    s = s.replaceAll(RegExp(r'[^\d.,]'), '').trim();
     if (s.isEmpty) return 0.0;
 
-    // Handle Vietnamese format (150.000 or 150,000)
+    // Handle thousand separators
     if (s.contains('.') && s.contains(',')) {
       if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
         // e.g. 1.250,50 -> 1250.50
@@ -182,23 +200,36 @@ class ReceiptParser {
         // e.g. 1,250.50 -> 1250.50
         s = s.replaceAll(',', '');
       }
-    } else if (s.contains('.')) {
-      // Could be 150.000 (thousands) or 15.50 (decimal)
-      final parts = s.split('.');
-      if (parts.length > 2 || (parts.length == 2 && parts[1].length == 3)) {
-        s = s.replaceAll('.', '');
-      }
     } else if (s.contains(',')) {
       final parts = s.split(',');
-      if (parts.length > 2 || (parts.length == 2 && parts[1].length == 3)) {
+      if (parts.length == 2 && parts[1].length == 2 && parts[1] == '00') {
+        // e.g. 537,00 (missing a zero from faint ink) -> 537000
+        s = '${parts[0]}000';
+      } else {
         s = s.replaceAll(',', '');
+      }
+    } else if (s.contains('.')) {
+      final parts = s.split('.');
+      if (parts.length == 2 && parts[1].length == 2 && parts[1] == '00') {
+        // e.g. 537.00 -> 537000
+        s = '${parts[0]}000';
+      } else if (parts.length > 2 || (parts.length == 2 && parts[1].length == 3)) {
+        s = s.replaceAll('.', '');
       }
     }
 
-    return double.tryParse(s) ?? 0.0;
+    double val = double.tryParse(s) ?? 0.0;
+
+    // In Vietnam, expenses are in VND. An amount between 10 and 999 is written in thousands (k)
+    // or has lost three zeros during scanning: e.g. 537 -> 537,000 VND
+    if (val >= 10 && val < 1000) {
+      val = val * 1000;
+    }
+
+    return val;
   }
 
-  /// Extracts date from lines (DD/MM/YYYY, YYYY-MM-DD, etc.)
+  /// Extracts date from lines (DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY, etc.)
   static DateTime _extractDate(List<String> lines) {
     // Regex for DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
     final dmyRegex = RegExp(r'\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b');
@@ -213,7 +244,8 @@ class ReceiptParser {
         int year = int.tryParse(dmyMatch.group(3)!) ?? DateTime.now().year;
         if (year < 100) year += 2000;
 
-        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+        // Valid years from 2000 to 2099
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000 && year <= 2099) {
           return DateTime(year, month, day);
         }
       }
@@ -224,7 +256,7 @@ class ReceiptParser {
         int month = int.tryParse(ymdMatch.group(2)!) ?? 1;
         int day = int.tryParse(ymdMatch.group(3)!) ?? 1;
 
-        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000 && year <= 2099) {
           return DateTime(year, month, day);
         }
       }
