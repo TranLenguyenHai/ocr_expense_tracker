@@ -1,14 +1,23 @@
 import 'package:intl/intl.dart';
 
 class CurrencyFormatter {
-  static final NumberFormat _vnCurrency = NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: '₫',
-    decimalDigits: 0,
-  );
-
+  // Avoid MissingLocaleDataException: format manually without vi_VN locale.
   static String format(double amount) {
-    return _vnCurrency.format(amount);
+    final intAmount = amount.toInt();
+    return '${_addThousandSeparators(intAmount)} ₫';
+  }
+
+  static String _addThousandSeparators(int value) {
+    final str = value.abs().toString();
+    final buffer = StringBuffer();
+    final startOffset = str.length % 3;
+    for (int i = 0; i < str.length; i++) {
+      if (i != 0 && (i - startOffset) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(str[i]);
+    }
+    return value < 0 ? '-${buffer.toString()}' : buffer.toString();
   }
 
   static String formatCompact(double amount) {
