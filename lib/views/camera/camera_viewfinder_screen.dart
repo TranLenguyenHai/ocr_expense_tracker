@@ -198,19 +198,82 @@ Cảm ơn quý khách!
   void _showSampleReceiptPicker() {
     final samples = [
       {
-        'title': 'Hóa đơn Siêu thị WinMart',
-        'sub': '85.000 ₫ • Ăn uống • 24/10/2026',
+        'title': 'Hóa đơn WinMart+ (237.576 ₫)',
+        'sub': 'Mắm tôm Lê Gia, Nước xốt Kewpie, Táo Gala • 25/04/2026',
         'text': '''
-WINMART+ LÊ DUẨN
-ĐC: 182 Lê Duẩn, Đà Nẵng
-HÓA ĐƠN BÁN HÀNG
-Ngày: 24/10/2026 14:30
-Sữa tươi tiệt trùng: 36.000
-Bánh mì Sandwich: 24.000
-Snack Oishi: 15.000
-Nước khoáng Lavie: 10.000
-TỔNG TIỀN: 85.000 VND
-Cảm ơn quý khách!
+WinMart+
+PHIẾU TÍNH TIỀN
+25/04/2026 10:31|MSCH:4179|NV:09016727
+PTT:417901260404425
+Mã CQT: M1-26-CPN7O-04138504425
+Mặt hàng/giá   SL   KM   T.Tiền
+LÊ GIA mắm tôm 110g
+17,500   1   17,500
+KEWPIE Nước xốt mè rang chai 500ml
+133,500   1   -19,600   113,900
+WMNK Táo Royal Gala NZL
+89,900   1.344   -14,650   106,176
+TỔNG TIỀN   -34,250   237,576
+Tiền cần thanh toán   237,576
+Quét QR để xuất hóa đơn hoặc truy cập xuathoadon.winmart.vn trong 60 phút. Xin từ chối chịu trách nhiệm nếu nhập thông tin sai.
+Mã HD: D996  2471066866-41791
+''',
+      },
+      {
+        'title': 'Hóa đơn WinMart (68.097 ₫)',
+        'sub': 'Thịt Meat Deli, Cam vàng TQ • 06/03/2026',
+        'text': '''
+WinMart
+PHIẾU TÍNH TIỀN
+06/03/2026 11:28|MSCH:1645|NV:09020371
+PTT:164503260301812
+Mã CQT: M1-26-CPN7O-03035601812
+Mặt hàng/giá   SL   KM   T.Tiền
+WMNK Cam vàng TQ
+59,000   0.346   -3,460   16,954
+MEAT DELI [SIG] Thịt heo xay đặc biệt
+182,900   0.36   65,844
+MEAT DELI Thịt heo xay
+149,900   0.366   54,863
+MEAT DELI [PRE] Ba rọi rút sườn (S)
+287,900   0.42   120,918
+MEAT DELI [SIG] Nạc dăm đầu giòn
+301,900   0.318   96,004
+MEAT DELI [SIG] Nạc dăm đầu giòn
+301,900   0.376   113,514
+TỔNG TIỀN   -3,460   468,097
+Khấu trừ, ưu đãi khác   400,000
+Tiền cần thanh toán   68,097
+SĐT Khách: ***850   Điểm tích lũy:   9,866,800
+Quét QR để xuất hóa đơn hoặc truy cập xuathoadon.winmart.vn trong 60 phút. Xin từ chối chịu trách nhiệm nếu nhập thông tin sai.
+Mã HD: BF5C  02471066866 -...
+''',
+      },
+      {
+        'title': 'Hóa đơn Quán Ăn Thiện Tân (537.000 ₫)',
+        'sub': 'Bún Sing, Mì xào, Cơm bát bửu • 13/11/2011',
+        'text': '''
+QUAN AN THIEN TAN
+17-19 TON DAN F13Q4 TPHCM
+DT: 9407863-8259956
+*********
+REG 13-11-2011 20:54
+CA 1 MC #01 000887
+BANSO : 47
+
+1 BUN SING 42,000
+1 MI GION X CHAY 37,000
+2 MI X GION N 80,000
+4 COM BAT BUU 172,000
+1 SUON CHIEN KDO 65,000
+1 HU TIEU N 40,000
+1 TOM LAN BOT 65,000
+2 PEPSI 16,000
+10 TRA DA 20,000
+TIEN MAT
+537,000
+CAM ON QUY KHACH
+HEN GAP LAI!
 ''',
       },
       {
