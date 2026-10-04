@@ -56,8 +56,8 @@ class _ReviewExpenseScreenState extends State<ReviewExpenseScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2050),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
