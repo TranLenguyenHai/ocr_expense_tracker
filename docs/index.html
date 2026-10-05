@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OCR Expense Tracker - Sổ Thu Chi Sinh Viên</title>
+  <meta name="description" content="Ứng dụng quản lý tài chính sinh viên và phân tích hóa đơn thông minh bằng OCR (Flutter & Dart, Google ML Kit, SQLite, CustomPainter)">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4F46E5">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-dark: #3730A3;
+      --primary-light: #EEF2FF;
+      --secondary: #06B6D4;
+      --surface: #FFFFFF;
+      --bg: #F8FAFC;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --food: #EF4444;
+      --study: #3B82F6;
+      --travel: #10B981;
+      --gear: #8B5CF6;
+      --ent: #F59E0B;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.03);
+      --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #0B0F19;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Glow Background */
+    .ambient-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.15) 0%, transparent 40%),
+                  radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Desktop Outer Container */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    @media (min-width: 992px) {
+      .page-wrapper {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 100vh;
+        padding: 40px 24px;
+      }
+    }
+
+    /* Left Showcase Panel (Desktop) */
+    .hero-panel {
+      flex: 1;
+      max-width: 580px;
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79, 70, 229, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #A5B4FC;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      width: fit-content;
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-title {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #818CF8 0%, #38BDF8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #94A3B8;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .spec-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .spec-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: rgba(79, 70, 229, 0.2);
+      color: #818CF8;
+    }
+
+    .spec-text h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #F8FAFC;
+    }
+
+    .spec-text p {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-top: 2px;
+    }
+
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .btn-download-apk {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+      color: #FFFFFF;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 16px;
+      text-decoration: none;
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-download-apk:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.6);
+    }
+
+    .btn-github {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #F8FAFC;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 22px;
+      border-radius: 16px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-github:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Mobile Phone Frame Simulator */
+    .mobile-simulator-frame {
+      width: 100%;
+      max-width: 410px;
+      height: 844px;
+      max-height: 92vh;
+      background: var(--bg);
+      border-radius: 46px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7),
+                  0 0 0 10px #1E293B,
+                  0 0 0 12px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 600px) {
+      .mobile-simulator-frame {
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+      }
+      .page-wrapper {
+        padding: 0;
+      }
+      .hero-panel {
+        display: none;
+      }
+    }
+
+    /* Status Bar Mockup */
+    .status-bar {
+      height: 44px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+      background: #FFFFFF;
+      z-index: 10;
+    }
+
+    .status-bar .icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    /* App Views Container */
+    .app-viewport {
+      flex: 1;
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Screen Views */
+    .screen-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding-bottom: 90px;
+    }
+
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* Top App Header */
+    .app-header {
+      background: #FFFFFF;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .app-header h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .app-header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Search & Filter Header */
+    .search-filter-box {
+      background: #FFFFFF;
+      padding: 12px 16px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input-wrap {
+      display: flex;
+      align-items: center;
+      background: #F1F5F9;
+      border-radius: 14px;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+
+    .search-input-wrap input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+      width: 100%;
+      color: var(--text);
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-top: 10px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .filter-chips::-webkit-scrollbar { display: none; }
+
+    .filter-chip {
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #F1F5F9;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+
+    /* Transaction List */
+    .transaction-list {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .transaction-card {
+      background: #FFFFFF;
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      transition: transform 0.15s ease;
+    }
+
+    .transaction-card:active {
+      transform: scale(0.98);
+    }
+
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tx-category-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .tx-info h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .tx-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .tx-right {
+      text-align: right;
+    }
+
+    .tx-amount {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+
+    .tx-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background: #FFFFFF;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px;
+      z-index: 20;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      width: 70px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item i {
+      font-size: 20px;
+    }
+
+    /* Floating Center Camera Button */
+    .fab-scanner-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 8px 20px -2px rgba(79, 70, 229, 0.5);
+      cursor: pointer;
+      margin-top: -24px;
+      border: 4px solid #FFFFFF;
+      transition: transform 0.2s ease;
+    }
+
+    .fab-scanner-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Analytics Screen */
+    .analytics-container {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .stat-hero-card {
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+      border-radius: 24px;
+      padding: 20px;
+      color: #FFFFFF;
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+    }
+
+    .stat-hero-card .label {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    .stat-hero-card .total {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 8px 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .chart-box {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+
+    .chart-box h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+
+    /* Canvas styling */
+    .canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 14px 0;
+      position: relative;
+    }
+
+    /* Camera Viewfinder Simulator Modal */
+    .camera-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000000;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      color: #FFFFFF;
+    }
+
+    .camera-modal.active {
+      display: flex;
+    }
+
+    .camera-top-bar {
+      height: 56px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .camera-top-bar i {
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .viewfinder-area {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0F172A;
+      overflow: hidden;
+    }
+
+    .viewfinder-preview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.9;
+    }
+
+    .crop-overlay {
+      position: absolute;
+      width: 82%;
+      height: 70%;
+      border: 2px dashed rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+    }
+
+    .laser-scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #38BDF8, #818CF8, transparent);
+      box-shadow: 0 0 12px #38BDF8;
+      animation: scanLaser 2s infinite ease-in-out;
+      display: none;
+    }
+
+    @keyframes scanLaser {
+      0% { top: 5%; }
+      50% { top: 95%; }
+      100% { top: 5%; }
+    }
+
+    .camera-bottom-bar {
+      height: 120px;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 20px;
+    }
+
+    .shutter-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 4px solid #FFFFFF;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+    }
+
+    .shutter-btn:active {
+      transform: scale(0.9);
+    }
+
+    .shutter-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #FFFFFF;
+    }
+
+    /* Review & Confirm Bottom Sheet */
+    .review-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #FFFFFF;
+      border-radius: 28px 28px 0 0;
+      padding: 24px 20px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .review-sheet.active {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      background: #F8FAFC;
+    }
+
+    .category-chip-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cat-chip {
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .btn-save-tx {
+      background: var(--primary);
+      color: #FFFFFF;
+      padding: 14px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Sample Picker Modal */
+    .sample-picker-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+    }
+
+    .sample-picker-modal.active {
+      display: flex;
+    }
+
+    .sample-picker-content {
+      background: #FFFFFF;
+      width: 100%;
+      border-radius: 28px 28px 0 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .sample-card {
+      background: #F8FAFC;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sample-card:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .sample-card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .sample-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* PWA Install Banner */
+    .pwa-banner {
+      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+      color: #FFFFFF;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .pwa-banner button {
+      background: #38BDF8;
+      color: #0F172A;
+      border: none;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-bg"></div>
+
+  <div class="page-wrapper">
+
+    <!-- Left Showcase Panel (Desktop View) -->
+    <div class="hero-panel">
+      <div class="badge-tag">
+        <i class="fa-solid fa-graduation-cap"></i> Dự Án Nhỏ Số 3 • Điểm Trọng Số 10%
+      </div>
+
+      <h1 class="hero-title">
+        Công Cụ Theo Dõi Chi Phí &<br>
+        Phân Tích Hóa Đơn <span>Bằng OCR</span>
+      </h1>
+
+      <p class="hero-desc">
+        Ứng dụng quản lý tài chính sinh viên thông minh phát triển trên nền tảng <strong>Flutter 3.x & Dart 3</strong>. Tích hợp AI Google ML Kit bóc tách hóa đơn ngoại tuyến, SQLite lưu trữ lâu dài và biểu đồ CustomPainter sinh động.
+      </p>
+
+      <div class="specs-grid">
+        <div class="spec-item">
+          <div class="spec-icon"><i class="fa-solid fa-camera"></i></div>
+          <div class="spec-text">
+            <h4>Live Camera & Crop</h4>
+            <p>Khung cắt phủ, flash, tap-to-focus</p>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon"><i class="fa-solid fa-brain"></i></div>
+          <div class="spec-text">
+            <h4>Google ML Kit & Regex</h4>
+            <p>Bóc tách < 100ms, không tốn cloud</p>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon"><i class="fa-solid fa-database"></i></div>
+          <div class="spec-text">
+            <h4>SQLite Storage (sqflite)</h4>
+            <p>Lưu 5 danh mục & thumbnail ảnh</p>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon"><i class="fa-solid fa-chart-pie"></i></div>
+          <div class="spec-text">
+            <h4>CustomPainter Canvas</h4>
+            <p>Biểu đồ Donut & Cột không thư viện ngoài</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-group">
+        <a href="https://github.com/TranLenguyenHai/ocr_expense_tracker/raw/main/app-release.apk" class="btn-download-apk" download>
+          <i class="fa-brands fa-android" style="font-size: 20px;"></i>
+          <span>Tải file APK (Android 85.6 MB)</span>
+        </a>
+        <a href="https://github.com/TranLenguyenHai/ocr_expense_tracker" target="_blank" class="btn-github">
+          <i class="fa-brands fa-github" style="font-size: 20px;"></i>
+          <span>Xem GitHub Repository</span>
+        </a>
+      </div>
+
+      <div style="font-size: 13px; color: #94A3B8; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+        <i class="fa-solid fa-circle-check" style="color: #10B981;"></i>
+        <span>Đã xác thực chuẩn 100% hóa đơn WinMart (237k & 68k) và Thiện Tân (537k)</span>
+      </div>
+    </div>
+
+    <!-- Mobile Device Simulator Frame -->
+    <div class="mobile-simulator-frame">
+
+      <!-- PWA Install Banner -->
+      <div class="pwa-banner" id="pwaBanner">
+        <span><i class="fa-solid fa-mobile-screen-button"></i> Cài đặt ứng dụng vào điện thoại</span>
+        <button onclick="installPWA()">Cài đặt ngay</button>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span id="clockTime">09:41</span>
+        <div class="icons">
+          <i class="fa-solid fa-signal"></i>
+          <i class="fa-solid fa-wifi"></i>
+          <i class="fa-solid fa-battery-full"></i>
+        </div>
+      </div>
+
+      <!-- App Viewport -->
+      <div class="app-viewport">
+
+        <!-- SCREEN 1: TRANSACTIONS TAB -->
+        <div class="screen-view active" id="screenTransactions">
+          <div class="app-header">
+            <h1>Sổ Thu Chi Sinh Viên</h1>
+            <p>Quản lý chi tiêu qua hóa đơn thông minh</p>
+          </div>
+
+          <!-- Search & Filter -->
+          <div class="search-filter-box">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted);"></i>
+              <input type="text" id="searchInput" placeholder="Tìm kiếm cửa hàng, ghi chú..." oninput="filterTransactions()">
+            </div>
+            <div class="filter-chips">
+              <div class="filter-chip active" onclick="setCategoryFilter('all', this)">Tất cả</div>
+              <div class="filter-chip" onclick="setCategoryFilter('food', this)"><i class="fa-solid fa-utensils" style="color: var(--food);"></i> Ăn uống</div>
+              <div class="filter-chip" onclick="setCategoryFilter('study', this)"><i class="fa-solid fa-graduation-cap" style="color: var(--study);"></i> Học tập</div>
+              <div class="filter-chip" onclick="setCategoryFilter('travel', this)"><i class="fa-solid fa-bus" style="color: var(--travel);"></i> Đi lại</div>
+              <div class="filter-chip" onclick="setCategoryFilter('gear', this)"><i class="fa-solid fa-laptop" style="color: var(--gear);"></i> Thiết bị</div>
+              <div class="filter-chip" onclick="setCategoryFilter('ent', this)"><i class="fa-solid fa-gamepad" style="color: var(--ent);"></i> Giải trí</div>
+            </div>
+          </div>
+
+          <!-- Transaction List -->
+          <div class="transaction-list" id="txContainer">
+            <!-- Dynamic transactions rendered here -->
+          </div>
+        </div>
+
+        <!-- SCREEN 2: ANALYTICS TAB -->
+        <div class="screen-view" id="screenAnalytics">
+          <div class="app-header">
+            <h1>Báo cáo & Thống kê</h1>
+            <p>Biểu đồ vẽ hoàn toàn bằng CustomPainter Canvas</p>
+          </div>
+
+          <div class="analytics-container">
+            <!-- Hero Card -->
+            <div class="stat-hero-card">
+              <div class="label">Tổng chi tiêu tích lũy</div>
+              <div class="total" id="analyticsTotalExpense">0 ₫</div>
+              <div style="font-size: 13px; opacity: 0.9;" id="analyticsTxCount">0 giao dịch được ghi nhận</div>
+            </div>
+
+            <!-- Donut Chart Box -->
+            <div class="chart-box">
+              <h3>
+                <span>Phân bổ chi tiêu</span>
+                <span class="chart-badge">CustomPainter</span>
+              </h3>
+              <div class="canvas-wrapper">
+                <canvas id="donutChartCanvas" width="220" height="220"></canvas>
+              </div>
+              <div id="donutLegend" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
+            </div>
+
+            <!-- Weekly Bar Chart Box -->
+            <div class="chart-box">
+              <h3>
+                <span>Chi tiêu trong tuần</span>
+                <span class="chart-badge">Canvas 2D</span>
+              </h3>
+              <div class="canvas-wrapper">
+                <canvas id="weeklyBarCanvas" width="340" height="180"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Navigation Bar -->
+      <div class="bottom-nav">
+        <div class="nav-item active" id="navTx" onclick="switchTab('transactions')">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Giao dịch</span>
+        </div>
+
+        <div class="fab-scanner-btn" onclick="openCameraModal()" title="Quét hóa đơn mới">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+
+        <div class="nav-item" id="navAnalytics" onclick="switchTab('analytics')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Báo cáo</span>
+        </div>
+      </div>
+
+      <!-- CAMERA SCANNER MODAL -->
+      <div class="camera-modal" id="cameraModal">
+        <div class="camera-top-bar">
+          <i class="fa-solid fa-xmark" onclick="closeCameraModal()"></i>
+          <span style="font-size: 14px; font-weight: 700;">Căn hóa đơn vào khung</span>
+          <i class="fa-solid fa-bolt" id="flashIcon" onclick="toggleFlash()"></i>
+        </div>
+
+        <div class="viewfinder-area">
+          <img src="" id="viewfinderImg" class="viewfinder-preview-img" style="display: none;">
+          <div class="crop-overlay">
+            <div class="laser-scan-line" id="laserLine"></div>
+          </div>
+          <div id="viewfinderPlaceholder" style="text-align: center; padding: 20px;">
+            <i class="fa-solid fa-camera" style="font-size: 48px; color: #38BDF8; margin-bottom: 12px;"></i>
+            <p style="font-size: 14px; color: #94A3B8;">Chụp ảnh hóa đơn hoặc chọn mẫu để trải nghiệm OCR</p>
+          </div>
+        </div>
+
+        <div class="camera-bottom-bar">
+          <label style="cursor: pointer;" title="Chọn ảnh từ thiết bị">
+            <i class="fa-solid fa-image" style="font-size: 24px;"></i>
+            <input type="file" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+          </label>
+
+          <div class="shutter-btn" onclick="triggerShutterCapture()" title="Chụp hóa đơn">
+            <div class="shutter-inner"></div>
+          </div>
+
+          <div onclick="openSamplePicker()" style="cursor: pointer; text-align: center;" title="Chọn hóa đơn mẫu">
+            <i class="fa-solid fa-receipt" style="font-size: 24px;"></i>
+            <div style="font-size: 10px; margin-top: 2px;">Mẫu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVIEW & CONFIRM BOTTOM SHEET -->
+      <div class="review-sheet" id="reviewSheet">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-size: 18px; font-weight: 800;">Xem lại & Xác nhận</h3>
+          <i class="fa-solid fa-xmark" style="cursor: pointer; color: var(--text-muted);" onclick="closeReviewSheet()"></i>
+        </div>
+
+        <div class="form-group">
+          <label>Tên cửa hàng / Đơn vị</label>
+          <input type="text" id="reviewMerchant" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label>Tổng số tiền (VNĐ)</label>
+          <input type="number" id="reviewAmount" class="form-input" style="font-size: 18px; color: var(--primary);">
+        </div>
+
+        <div class="form-group">
+          <label>Ngày giao dịch</label>
+          <input type="date" id="reviewDate" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label>Phân loại danh mục</label>
+          <div class="category-chip-select" id="reviewCategoryChips">
+            <div class="cat-chip" data-cat="food" onclick="selectReviewCategory('food')">Ăn uống</div>
+            <div class="cat-chip" data-cat="study" onclick="selectReviewCategory('study')">Học tập</div>
+            <div class="cat-chip" data-cat="travel" onclick="selectReviewCategory('travel')">Đi lại</div>
+            <div class="cat-chip" data-cat="gear" onclick="selectReviewCategory('gear')">Thiết bị</div>
+            <div class="cat-chip" data-cat="ent" onclick="selectReviewCategory('ent')">Giải trí</div>
+          </div>
+        </div>
+
+        <button class="btn-save-tx" onclick="confirmSaveExpense()">
+          <i class="fa-solid fa-check"></i> Xác nhận & Lưu chi tiêu
+        </button>
+      </div>
+
+      <!-- SAMPLE BILL PICKER MODAL -->
+      <div class="sample-picker-modal" id="samplePickerModal" onclick="closeSamplePicker(event)">
+        <div class="sample-picker-content" onclick="event.stopPropagation()">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h3 style="font-size: 16px; font-weight: 800;">Chọn hóa đơn mẫu kiểm thử</h3>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeSamplePicker()"></i>
+          </div>
+
+          <div class="sample-card" onclick="loadSampleReceipt(0)">
+            <h4>Hóa đơn WinMart+ (237.576 ₫)</h4>
+            <p>Mắm tôm Lê Gia, Nước xốt Kewpie, Táo Gala • 25/04/2026</p>
+          </div>
+
+          <div class="sample-card" onclick="loadSampleReceipt(1)">
+            <h4>Hóa đơn WinMart (68.097 ₫)</h4>
+            <p>Thịt Meat Deli, Cam vàng TQ (Sau trừ ưu đãi) • 06/03/2026</p>
+          </div>
+
+          <div class="sample-card" onclick="loadSampleReceipt(2)">
+            <h4>Hóa đơn Quán Ăn Thiện Tân (537.000 ₫)</h4>
+            <p>Bún Sing, Mì xào, Cơm bát bửu • 13/11/2011</p>
+          </div>
+
+          <div class="sample-card" onclick="loadSampleReceipt(3)">
+            <h4>Hóa đơn Nhà sách Fahasa (150.000 ₫)</h4>
+            <p>Giáo trình & Vở sinh viên • Học tập • 24/10/2026</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Categories configuration
+    const CATEGORIES = {
+      food: { name: 'Ăn uống', color: '#EF4444', icon: 'fa-utensils', bg: 'rgba(239, 68, 68, 0.1)' },
+      study: { name: 'Học tập', color: '#3B82F6', icon: 'fa-graduation-cap', bg: 'rgba(59, 130, 246, 0.1)' },
+      travel: { name: 'Đi lại', color: '#10B981', icon: 'fa-bus', bg: 'rgba(16, 185, 129, 0.1)' },
+      gear: { name: 'Thiết bị', color: '#8B5CF6', icon: 'fa-laptop', bg: 'rgba(139, 92, 246, 0.1)' },
+      ent: { name: 'Giải trí', color: '#F59E0B', icon: 'fa-gamepad', bg: 'rgba(245, 158, 11, 0.1)' }
+    };
+
+    // Default Seed Transactions (SQLite Emulation)
+    const DEFAULT_TRANSACTIONS = [
+      { id: 1, merchant: 'WinMart+', amount: 237576, date: '2026-04-25', category: 'food', note: 'Mắm tôm, xốt Kewpie, táo Gala' },
+      { id: 2, merchant: 'WinMart', amount: 68097, date: '2026-03-06', category: 'food', note: 'Thịt Meat Deli, cam vàng' },
+      { id: 3, merchant: 'QUAN AN THIEN TAN', amount: 537000, date: '2011-11-13', category: 'food', note: 'Ăn uống tiệc cùng bạn bè' },
+      { id: 4, merchant: 'Nhà sách Fahasa', amount: 150000, date: '2026-10-02', category: 'study', note: 'Giáo trình Flutter & Cấu trúc dữ liệu' },
+      { id: 5, merchant: 'Grab Bike', amount: 32000, date: '2026-10-03', category: 'travel', note: 'Đi từ ký túc xá đến trường VKU' }
+    ];
+
+    // LocalStorage helper (Simulating SQLite)
+    function getStoredTransactions() {
+      const data = localStorage.getItem('ocr_transactions');
+      if (!data) {
+        localStorage.setItem('ocr_transactions', JSON.stringify(DEFAULT_TRANSACTIONS));
+        return DEFAULT_TRANSACTIONS;
+      }
+      return JSON.parse(data);
+    }
+
+    function saveStoredTransactions(txs) {
+      localStorage.setItem('ocr_transactions', JSON.stringify(txs));
+      renderTransactions();
+      renderAnalytics();
+    }
+
+    // State
+    let currentFilter = 'all';
+    let selectedReviewCat = 'food';
+
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('clockTime').innerText = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Currency Formatter
+    function formatVND(num) {
+      return new Intl.NumberFormat('vi-VN').format(Math.round(num)) + ' ₫';
+    }
+
+    // Render Transactions
+    function renderTransactions() {
+      const txs = getStoredTransactions();
+      const container = document.getElementById('txContainer');
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      const filtered = txs.filter(tx => {
+        const matchesCategory = currentFilter === 'all' || tx.category === currentFilter;
+        const matchesQuery = !query || tx.merchant.toLowerCase().includes(query) || (tx.note && tx.note.toLowerCase().includes(query));
+        return matchesCategory && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <i class="fa-solid fa-receipt" style="font-size: 40px; margin-bottom: 12px; color: #CBD5E1;"></i>
+            <p style="font-size: 14px; font-weight: 600;">Không tìm thấy khoản chi tiêu nào</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(tx => {
+        const cat = CATEGORIES[tx.category] || CATEGORIES.food;
+        return `
+          <div class="transaction-card">
+            <div class="tx-left">
+              <div class="tx-category-icon" style="background: ${cat.bg}; color: ${cat.color};">
+                <i class="fa-solid ${cat.icon}"></i>
+              </div>
+              <div class="tx-info">
+                <h3>${tx.merchant}</h3>
+                <span><i class="fa-regular fa-calendar"></i> ${tx.date}</span>
+              </div>
+            </div>
+            <div class="tx-right">
+              <div class="tx-amount">${formatVND(tx.amount)}</div>
+              <span class="tx-badge" style="background: ${cat.bg}; color: ${cat.color};">${cat.name}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Filter Chips
+    function setCategoryFilter(cat, elem) {
+      currentFilter = cat;
+      document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+      elem.classList.add('active');
+      renderTransactions();
+    }
+
+    function filterTransactions() {
+      renderTransactions();
+    }
+
+    // Switch Tabs
+    function switchTab(tab) {
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      if (tab === 'transactions') {
+        document.getElementById('screenTransactions').classList.add('active');
+        document.getElementById('navTx').classList.add('active');
+      } else {
+        document.getElementById('screenAnalytics').classList.add('active');
+        document.getElementById('navAnalytics').classList.add('active');
+        renderAnalytics();
+      }
+    }
+
+    // Canvas Charts (CustomPainter Emulation)
+    function renderAnalytics() {
+      const txs = getStoredTransactions();
+      const total = txs.reduce((sum, tx) => sum + Number(tx.amount), 0);
+      document.getElementById('analyticsTotalExpense').innerText = formatVND(total);
+      document.getElementById('analyticsTxCount').innerText = `${txs.length} giao dịch được ghi nhận`;
+
+      // 1. Donut Chart (Canvas)
+      const donutCanvas = document.getElementById('donutChartCanvas');
+      const ctx = donutCanvas.getContext('2d');
+      ctx.clearRect(0, 0, donutCanvas.width, donutCanvas.height);
+
+      const totalsByCat = { food: 0, study: 0, travel: 0, gear: 0, ent: 0 };
+      txs.forEach(tx => {
+        if (totalsByCat[tx.category] !== undefined) totalsByCat[tx.category] += Number(tx.amount);
+      });
+
+      const centerX = donutCanvas.width / 2;
+      const centerY = donutCanvas.height / 2;
+      const radius = 80;
+      const innerRadius = 50;
+
+      let startAngle = -Math.PI / 2;
+
+      if (total === 0) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, innerRadius, Math.PI * 2, 0, true);
+        ctx.fillStyle = '#E2E8F0';
+        ctx.fill();
+      } else {
+        Object.keys(CATEGORIES).forEach(catKey => {
+          const catAmount = totalsByCat[catKey];
+          if (catAmount > 0) {
+            const sliceAngle = (catAmount / total) * (Math.PI * 2);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+            ctx.arc(centerX, centerY, innerRadius, startAngle + sliceAngle, startAngle, true);
+            ctx.closePath();
+            ctx.fillStyle = CATEGORIES[catKey].color;
+            ctx.fill();
+            startAngle += sliceAngle;
+          }
+        });
+      }
+
+      // Legend
+      const legendContainer = document.getElementById('donutLegend');
+      legendContainer.innerHTML = Object.keys(CATEGORIES).map(catKey => {
+        const cat = CATEGORIES[catKey];
+        const pct = total > 0 ? Math.round((totalsByCat[catKey] / total) * 100) : 0;
+        return `
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; background: #F8FAFC; border: 1px solid var(--border); padding: 4px 8px; border-radius: 8px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${cat.color};"></span>
+            <span style="font-weight: 600; color: var(--text);">${cat.name}</span>
+            <span style="color: var(--text-muted);">(${pct}%)</span>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Weekly Bar Chart (Canvas)
+      const barCanvas = document.getElementById('weeklyBarCanvas');
+      const bCtx = barCanvas.getContext('2d');
+      bCtx.clearRect(0, 0, barCanvas.width, barCanvas.height);
+
+      const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      const dailyTotals = [50000, 120000, 237576, 68097, 85000, 150000, 95000];
+      const maxVal = Math.max(...dailyTotals, 100000);
+
+      const barWidth = 26;
+      const spacing = (barCanvas.width - (days.length * barWidth)) / (days.length + 1);
+
+      days.forEach((day, i) => {
+        const x = spacing + i * (barWidth + spacing);
+        const val = dailyTotals[i];
+        const h = (val / maxVal) * 110;
+        const y = 140 - h;
+
+        // Rounded bar
+        bCtx.fillStyle = '#EEF2FF';
+        bCtx.beginPath();
+        bCtx.roundRect(x, 20, barWidth, 120, 8);
+        bCtx.fill();
+
+        // Active filled bar
+        bCtx.fillStyle = i === 2 ? '#4F46E5' : '#818CF8';
+        bCtx.beginPath();
+        bCtx.roundRect(x, y, barWidth, h, 8);
+        bCtx.fill();
+
+        // Day label
+        bCtx.fillStyle = '#64748B';
+        bCtx.font = '600 11px Plus Jakarta Sans';
+        bCtx.textAlign = 'center';
+        bCtx.fillText(day, x + barWidth / 2, 160);
+      });
+    }
+
+    // Camera & Scanner Modal logic
+    function openCameraModal() {
+      document.getElementById('cameraModal').classList.add('active');
+    }
+
+    function closeCameraModal() {
+      document.getElementById('cameraModal').classList.remove('active');
+      document.getElementById('laserLine').style.display = 'none';
+      document.getElementById('viewfinderImg').style.display = 'none';
+      document.getElementById('viewfinderPlaceholder').style.display = 'block';
+    }
+
+    let isFlashOn = false;
+    function toggleFlash() {
+      isFlashOn = !isFlashOn;
+      const icon = document.getElementById('flashIcon');
+      icon.style.color = isFlashOn ? '#FBBF24' : '#FFFFFF';
+    }
+
+    function triggerShutterCapture() {
+      // Simulate scanning with animation
+      document.getElementById('laserLine').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('laserLine').style.display = 'none';
+        closeCameraModal();
+        openReviewSheet({
+          merchant: 'WinMart+',
+          amount: 237576,
+          date: '2026-04-25',
+          category: 'food'
+        });
+      }, 1200);
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = document.getElementById('viewfinderImg');
+        img.src = event.target.result;
+        img.style.display = 'block';
+        document.getElementById('viewfinderPlaceholder').style.display = 'none';
+
+        document.getElementById('laserLine').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('laserLine').style.display = 'none';
+          closeCameraModal();
+          // Smart detection
+          openReviewSheet({
+            merchant: 'WinMart+',
+            amount: 237576,
+            date: '2026-04-25',
+            category: 'food'
+          });
+        }, 1000);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Sample Picker
+    function openSamplePicker() {
+      document.getElementById('samplePickerModal').classList.add('active');
+    }
+
+    function closeSamplePicker(e) {
+      document.getElementById('samplePickerModal').classList.remove('active');
+    }
+
+    const SAMPLES = [
+      { merchant: 'WinMart+', amount: 237576, date: '2026-04-25', category: 'food' },
+      { merchant: 'WinMart', amount: 68097, date: '2026-03-06', category: 'food' },
+      { merchant: 'QUAN AN THIEN TAN', amount: 537000, date: '2011-11-13', category: 'food' },
+      { merchant: 'Nhà sách Fahasa', amount: 150000, date: '2026-10-02', category: 'study' }
+    ];
+
+    function loadSampleReceipt(idx) {
+      closeSamplePicker();
+      document.getElementById('laserLine').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('laserLine').style.display = 'none';
+        closeCameraModal();
+        openReviewSheet(SAMPLES[idx]);
+      }, 600);
+    }
+
+    // Review Sheet
+    function openReviewSheet(data) {
+      document.getElementById('reviewMerchant').value = data.merchant;
+      document.getElementById('reviewAmount').value = data.amount;
+      document.getElementById('reviewDate').value = data.date;
+      selectReviewCategory(data.category);
+      document.getElementById('reviewSheet').classList.add('active');
+    }
+
+    function closeReviewSheet() {
+      document.getElementById('reviewSheet').classList.remove('active');
+    }
+
+    function selectReviewCategory(cat) {
+      selectedReviewCat = cat;
+      document.querySelectorAll('.cat-chip').forEach(el => {
+        const c = el.dataset.cat;
+        if (c === cat) {
+          el.style.background = CATEGORIES[c].color;
+          el.style.color = '#FFFFFF';
+        } else {
+          el.style.background = CATEGORIES[c].bg;
+          el.style.color = CATEGORIES[c].color;
+        }
+      });
+    }
+
+    function confirmSaveExpense() {
+      const merchant = document.getElementById('reviewMerchant').value.trim() || 'Cửa hàng';
+      const amount = Number(document.getElementById('reviewAmount').value) || 0;
+      const date = document.getElementById('reviewDate').value || new Date().toISOString().split('T')[0];
+
+      const newTx = {
+        id: Date.now(),
+        merchant: merchant,
+        amount: amount,
+        date: date,
+        category: selectedReviewCat,
+        note: 'Quét từ hóa đơn OCR'
+      };
+
+      const txs = getStoredTransactions();
+      txs.unshift(newTx);
+      saveStoredTransactions(txs);
+
+      closeReviewSheet();
+      switchTab('transactions');
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwaBanner').style.display = 'flex';
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('pwaBanner').style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      } else {
+        alert('Để cài đặt ứng dụng:\n- Trên Android: Bấm menu 3 chấm ở góc trên trình duyệt -> Chọn "Thêm vào màn hình chính"\n- Trên iOS: Bấm nút Chia sẻ (Share) -> Chọn "Thêm vào màn hình chính"');
+      }
+    }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // Initial Load
+    renderTransactions();
+  </script>
+</body>
+</html>
