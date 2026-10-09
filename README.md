@@ -108,7 +108,7 @@ lib/
 ### Các bước cài đặt:
 1. **Clone repository về máy**:
    ```bash
-   git clone <URL_REPO_CUA_BAN>
+   git clone https://github.com/TranLenguyenHai/ocr_expense_tracker.git
    cd ocr_expense_tracker
    ```
 
@@ -148,6 +148,10 @@ Hệ thống đã bao gồm bộ kiểm thử tự động cho Regex Parser:
 ---
 
 ## 👥 Tác giả & Đóng góp
-* **Học phần**: Lập trình Đa nền tảng (Cross-Platform Mobile Development)
-* **Dự án**: Mini-Project 3 - OCR Expense Tracker & Receipt Parser
-* **Framework**: Flutter & Dart
+* **Họ và tên**: Trần Lê Nguyên Hải
+* **Mã sinh viên (MSSV)**: 23IT.EB031
+* **Lớp sinh hoạt**: 23ITe1
+* **Học phần**: Lập trình Đa nền tảng (Cross-Platform Mobile Development - VKU)
+* **Dự án**: Mini-Project 3 - OCR Expense Tracker & Receipt Parser (Flutter & Dart)
+* **Live Demo**: [https://tranlenguyenhai.github.io/ocr_expense_tracker/](https://tranlenguyenhai.github.io/ocr_expense_tracker/)
+* **Direct APK Download**: [app-release.apk](https://github.com/TranLenguyenHai/ocr_expense_tracker/raw/main/app-release.apk)
